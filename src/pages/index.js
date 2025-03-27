@@ -1,0 +1,10 @@
+export { default as Dashboard } from "./Dashboard";
+export { default as HomeLayout } from "./HomeLayout";
+export { default as Login } from "./Login";
+export { default as Register } from "./Register";
+export { default as ResetPassword } from "./Resetpassword";
+export { default as Portfolio } from "./Portfolio";
+export { default as Funds } from "./Funds";
+export { default as Order } from "./Order";
+export { default as Profile } from "./Profile";
+export { default as Users } from "./Users";

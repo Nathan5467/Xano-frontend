@@ -23,9 +23,26 @@
   font-size: calc(10px + 2vmin);
   color: white;
 }
-
+.hover-button:hover {
+  /* border-radius: 10px; */
+  background-color: rgb(209, 204, 204);
+  padding: 20px;
+  text-decoration: double;
+  transition: all 1s;
+}
+.hover-button {
+  padding: 10px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s; /* Adds a smooth transition */
+}
 .App-link {
   color: #61dafb;
+}
+
+.close:hover {
+  color: red;            /* Change to desired hover color */
+  background: none;      /* OPTIONAL: If you want to ensure no background on hover */
 }
 
 @keyframes App-logo-spin {
