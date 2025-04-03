@@ -1,78 +1,35 @@
-import { RouterProvider, createBrowserRouter } from "react-router-dom";
-import "bootstrap/dist/css/bootstrap.min.css";
+// src/App.jsx
+import { RouterProvider } from "react-router-dom";
+import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { ToastContainer } from "react-toastify";
+import { GlobalStyles } from './styles/GlobalStyles';
+import router from "./router";
+import 'react-toastify/dist/ReactToastify.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
-import {
-  Dashboard,
-  HomeLayout,
-  Login,
-  Register,
-  ResetPassword,
-  Portfolio,
-  Admin,
-  Funds,
-  Profile,
-  Order,
-  Users,
-} from "./pages";
-import { ToastContainer, toast } from "react-toastify";
-
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <HomeLayout />,
-    children: [
-      {
-        index: true,
-        element: <Register />,
-      },
-
-      {
-        path: "login",
-        element: <Login />,
-      },
-      {
-        path: "reset",
-        element: <ResetPassword />,
-      },
-      {
-        path: "users",
-        element: <Users />,
-      },
-      {
-        path: "register",
-        element: <Register />,
-      },
-      {
-        path: "dashboard",
-        element: <Dashboard />,
-      },
-      {
-        path: "portfolio",
-        element: <Portfolio />,
-      },
-      {
-        path: "fund",
-        element: <Funds />,
-      },
-      {
-        path: "order",
-        element: <Order />,
-      },
-      {
-        path: "profile",
-        element: <Profile />,
-      },
-    ],
-  },
-]);
-
-function App() {
+function AppContent() {
+  const { isDarkMode } = useTheme();
+  
   return (
     <>
+      <GlobalStyles isDarkMode={isDarkMode} />
       <RouterProvider router={router} />
-      <ToastContainer position="top-center" />
+      <ToastContainer 
+        position="top-center" 
+        theme={isDarkMode ? 'dark' : 'light'}
+        autoClose={3000}
+      />
     </>
   );
 }
 
+function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
+}
+
 export default App;
+

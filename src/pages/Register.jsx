@@ -6,7 +6,7 @@ import logo from "../assets/logo-sm.png";
 import "../styles/Register.css";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "../API/axios";
-import { toast, ToastContainer } from "react-toastify";
+//import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Modal from "./components/modal";
 
@@ -22,7 +22,7 @@ const RegisterForm = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const navigate = useNavigate();
-  const [token, setToken] = useState(() => {
+  const [token] = useState(() => {
     try {
       const storedToken = localStorage.getItem("auth");
       if (!storedToken) return null;

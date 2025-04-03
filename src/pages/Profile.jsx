@@ -2,7 +2,7 @@ import React from "react";
 import Navbar from "./components/Navbar";
 import StockIndices from "./components/StockIndices";
 import Watchlist from "./components/Watchlist";
-import Admin_dashboard from "./components/Admin_dashboard";
+//import Admin_dashboard from "./components/Admin_dashboard";
 import Profile_Main from "./components/Profile_Main";
 
 function App() {

@@ -8,7 +8,7 @@ const AdminFund = () => {
   const decoded = jwtDecode(token);
   const isAdmin = decoded.role === "admin";
   const [showDialog, setShowDialog] = useState(false);
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState("0");
   const [totalFund, setTotalFund] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -35,13 +35,12 @@ const AdminFund = () => {
   };
 
   const handleAddFund = async () => {
-    if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
-      setError("Please enter a valid amount greater than 0");
+    if (decoded.bank === "Unlinked") {
+      setError("Please link your bank account to add funds.");
       return;
     }
-
-    if (parseFloat(amount) > 1000000) {
-      setError("Amount cannot exceed $1,000,000");
+    if (!amount || isNaN(amount) || parseFloat(amount) < 0) {
+      setError("Please enter a valid amount greater than 0");
       return;
     }
 
@@ -65,8 +64,8 @@ const AdminFund = () => {
         Format: "fund",
         Date: formattedDate,
         Time: formattedTime,
-        Transaction_id: "c12b001a15f9bd46ef1c6551386c6a2bcda1ab3eae5091fba",
-        Type: "pending",
+        Transaction_id:decoded.bank,
+        Type: "donation",
         amount: parseFloat(amount),
       };
 
@@ -86,7 +85,7 @@ const AdminFund = () => {
       setSuccess(isAdmin ? "Total fund updated successfully!" : "Funds added successfully!");
       setTimeout(() => {
         setShowDialog(false);
-      }, 1500);
+      }, 200);
     } catch (error) {
       setError("Failed to process request. Please try again.");
       console.error("Error processing fund:", error);
@@ -107,8 +106,8 @@ const AdminFund = () => {
       <div className="row d-flex justify-content-between align-items-center">
         {/* Fund Information */}
         <div className="col">
-          <p className="border-bottom pb-1 mb-2 font-14 text-muted">
-            Fund Available
+          <p className="border-bottom pb-1 mb-2 font-14" style={{ color: "green" }}>
+            Community Donation
           </p>
           {isLoading ? (
             <div className="spinner-border spinner-border-sm text-primary" role="status">
@@ -140,9 +139,9 @@ const AdminFund = () => {
               Processing...
             </>
           ) : isAdmin ? (
-            "Edit Total Fund"
+            "Initialize Fund"
           ) : (
-            "Add Funds"
+            "Donate Fund"
           )}
         </button>
       </div>

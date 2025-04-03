@@ -10,7 +10,7 @@ import facebookIcon from "../assets/facebookicon.png";
 import twitterIcon from "../assets/twittericon.png";
 
 const LoginPage = () => {
-  const [token, setToken] = useState(() => {
+  const [token] = useState(() => {
     try {
       const storedToken = localStorage.getItem("auth");
       if (!storedToken) return null;
@@ -40,6 +40,7 @@ const LoginPage = () => {
     e.preventDefault();
     if (formData.email.length > 0 && formData.password.length > 0) {
       try {
+        
         const response = await axios.post("/api/v1/login", formData);
         if (response.data.msg === "Email not found"){
           toast.error("email not found");

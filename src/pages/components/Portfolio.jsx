@@ -1,16 +1,34 @@
 import React, { useEffect, useState } from "react";
 import axios from "../../API/axios";
-import Header_sub from "./Header_sub";
 import { jwtDecode } from "jwt-decode";
+import deleteIcon from "../../assets/redTrashIcon.png";
+import editIcon from "../../assets/edit.png";
+import { Button, Modal } from "react-bootstrap";
 
 const Portfolio = () => {
   const [page, setPage] = useState(1);
-  const [token, setToken] = useState(
+  const [token] = useState(
     JSON.parse(localStorage.getItem("auth")) || ""
   );
 
   axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
   const decoded = jwtDecode(token);
+  const [showModal, setShowModal] = useState(false);
+  const [addModal, setAddModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState([]);
+  const [stock_value, setStock_value] = useState([]);
+  const url = "/api/v1/getTransacton_history";
+  const [showDelModal, setShowDelModal] = useState(false);
+
+  const openDelModal = (id) => {
+    setItemToDelete(id);
+    setShowDelModal(true);
+  };
+  const closeDelModal = () => {
+    setItemToDelete(null);
+    setShowDelModal(false);
+  };
+
   const [selectItem, setSeleceItem] = useState({
     stocks: "",
     tie: 0,
@@ -21,8 +39,8 @@ const Portfolio = () => {
     day_gain: 0,
     returun: 0,
   });
-  const [showModal, setShowModal] = useState(false);
 
+  const [newItem, setnewItem] = useState({});
   const header_menu = [
     {
       name: "Stocks",
@@ -57,18 +75,28 @@ const Portfolio = () => {
       tag: "returun",
     },
   ];
-
-  const [stock_value, setStock_value] = useState([]);
-
-  const url = "/api/v1/getTransacton_history";
-
   const Save = async () => {
     let new_stock = stock_value.map((i) =>
       i._id === selectItem._id ? selectItem : i
     );
     setStock_value(new_stock);
-    const response = await axios.post(url, selectItem);
+    const response = await axios.put(url, selectItem);
     setShowModal(false);
+  };
+  const Add = async () => {
+    try {
+    let new_stock = [...stock_value, newItem];
+    setStock_value(new_stock);
+    const response = await axios.post(url, newItem);
+    setAddModal(false);
+  } catch (error) {
+    console.error("Error adding item:", error);
+  }
+  };
+  const handleDelete = async (id) => {    
+    await axios.delete(`/api/v1/getTransacton_history/${id}`);
+    setStock_value(stock_value.filter((item) => item._id !== id));
+    setShowDelModal(false);
   };
 
   useEffect(() => {
@@ -96,7 +124,7 @@ const Portfolio = () => {
 
   return (
     <div className="container mt-4">
-      <Header_sub />
+      {/* <Header_sub /> */}
       <div className="row">
         <div className="col-12">
           <div className="card shadow-sm">
@@ -109,7 +137,7 @@ const Portfolio = () => {
                   <ul className="nav nav-tabs" role="tablist">
                     <li className="nav-item">
                       <a
-                        className="nav-link active"
+                        className="nav-link active text-info"
                         data-bs-toggle="tab"
                         href="#Stocks"
                         role="tab"
@@ -118,16 +146,20 @@ const Portfolio = () => {
                         Stocks
                       </a>
                     </li>
-                    <li className="nav-item">
+                    {decoded.role === "admin" && <li className="nav-item">
                       <a
-                        className="nav-link"
-                        href="#Mutual_funds"
+                        className="nav-link text-info"
+                        data-bs-toggle="tab"
+                        href="#Stocks"
                         role="tab"
                         aria-selected="false"
+                        onClick={() => {
+                            setAddModal(true);
+                        }}
                       >
-                        Mutual Funds
+                        Add
                       </a>
-                    </li>
+                    </li>}
                   </ul>
                 </div>
               </div>
@@ -152,6 +184,7 @@ const Portfolio = () => {
                           <th>Value at CMP</th>
                           <th>Day's Gain</th>
                           <th>Return</th>
+                          {decoded.role === "admin" && (<th>Action</th>)}
                         </tr>
                       </thead>
                       <tbody>
@@ -160,12 +193,12 @@ const Portfolio = () => {
                             return (
                               <tr
                                 key={index}
-                                onClick={() => {
-                                  if (decoded.role === "admin") {
-                                    setShowModal(true);
-                                    setSeleceItem(item);
-                                  }
-                                }}
+                                // onClick={() => {
+                                //   if (decoded.role === "admin") {
+                                //     setShowModal(true);
+                                //     setSeleceItem(item);
+                                //   }
+                                // }}
                                 className="cursor-pointer"
                               >
                                 <td>{item.stocks}</td>
@@ -176,6 +209,26 @@ const Portfolio = () => {
                                 <td>{item.value_cmp}</td>
                                 <td className="text-success">{item.day_gain}</td>
                                 <td className="text-success">{item.returun}</td>
+                                {decoded.role === "admin" && (
+                                  <td>
+                                    <img
+                                      src={editIcon}
+                                      width={20}
+                                      alt="edit"
+                                      className="ti ti-pencil text-white email-action-icons-item mx-1"
+                                      onClick={() => {
+                                        setShowModal(true);
+                                        setSeleceItem(item);
+                                      }}
+                                    ></img>
+                                    <img
+                                      src={deleteIcon}
+                                      width={20}
+                                      alt="delete"
+                                      onClick={() => openDelModal(item._id)}
+                                      className="ti ti-pencil text-white email-action-icons-item mx-1"
+                                    ></img>
+                                </td>)}
                               </tr>
                             );
                         })}
@@ -284,6 +337,83 @@ const Portfolio = () => {
           </div>
         </div>
       )}
+      {addModal && (
+        <div
+          className="modal fade show"
+          style={{ display: "block" }}
+          tabIndex="1"
+          role="dialog"
+        >
+          <div className="modal-dialog" role="document">
+            <div className="modal-content p-4">
+              <div className="card p-4 shadow-sm">
+                <h3 className="text-center mb-4">Add Transaction History</h3>
+                <form>
+                  {header_menu.map((item, index) => (
+                    <div
+                      key={index}
+                      className="row align-items-center mb-3"
+                    >
+                      <div className="col-md-5">
+                        <h6 className="mb-0">{item.name}</h6>
+                      </div>
+                      <div className="col-md-7">
+                        <input
+                          type="text"
+                          className="form-control"
+                          name={item.tag}
+                          value={newItem[item.tag]}
+                          onChange={(e) => {
+                            const updatedItem = {
+                              ...newItem,
+                              [item.tag]: e.target.value,
+                            };
+                            setnewItem(updatedItem);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <div className="d-flex justify-content-between mt-4">
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={Add}
+                    >
+                      Add
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setAddModal(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for Deletion Confirmation */}
+      <Modal show={showDelModal} onHide={closeDelModal} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Deletion</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to delete this transaction? This action cannot be undone.
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={closeDelModal}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={() => handleDelete(itemToDelete)}>
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };
