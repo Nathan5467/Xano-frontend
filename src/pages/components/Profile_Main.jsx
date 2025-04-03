@@ -87,7 +87,7 @@ const useAuth = () => {
       const decoded = jwtDecode(token);
       return { token: JSON.parse(token), decoded };
     }
-    return { token: "", decoded: null };
+    //return { token: "", decoded: null };
   });
 
   const updateAuth = (newToken) => {
@@ -103,23 +103,18 @@ const useAuth = () => {
 const Profile = () => {
   const { isDarkMode } = useTheme();
   const { token, decoded, updateAuth } = useAuth();
-  // const [token] = useState(JSON.parse(localStorage.getItem("auth")) || "");
-  // const decoded = jwtDecode(token);
-
   axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-  // State management
   const [bankData, setBankData] = useState({
-    bank: decoded.bank || "",
-    IFSC_Code: decoded.IFSC_Code || "",
+    bank: decoded.bank,
+    IFSC_Code: decoded.IFSC_Code,
   });
 
   const [formdata, setFormdata] = useState({
-    name: decoded.name || "",
-    phoneNumber: decoded.phoneNumber || "",
-    branch: decoded.branch || "",
-    country: decoded.country || "",
-    majority: decoded.majority || "",
+    name: decoded.name,
+    phoneNumber: decoded.phoneNumbe,
+    branch: decoded.branch,
+    country: decoded.country,
+    majority: decoded.majority,
   });
 
   const [option, setOption] = useState(1);
@@ -131,8 +126,8 @@ const Profile = () => {
   // Handle bank details update
   const handleBankEdit = () => {
     setBankData({
-      bank: decoded.bank || "",
-      IFSC_Code: decoded.IFSC_Code || ""
+      bank: decoded.bank,
+      IFSC_Code: decoded.IFSC_Code
     });
     setIsEditingBank(true);
   };
@@ -140,8 +135,8 @@ const Profile = () => {
   const handleBankCancel = () => {
     setIsEditingBank(false);
     setBankData({
-      bank: decoded.bank || "",
-      IFSC_Code: decoded.IFSC_Code || ""
+      bank: decoded.bank,
+      IFSC_Code: decoded.IFSC_Code
     });
   };
 
@@ -152,7 +147,7 @@ const Profile = () => {
       // Validation
       setIsSubmitting(true);
       setLoading(true);
-      
+      console.log(decoded.id, bankData);
       const response = await axios.put(`/api/v1/updateUser/${decoded.id}`, {
         ...bankData,
       });
@@ -184,12 +179,10 @@ const Profile = () => {
     if (loading) return;
     try {
       setLoading(true);
-      
       const response = await axios.post("/api/v1/registeragain", {
         ...formdata,
-        id: decoded._id,
+        id: decoded.id,
       });
-
       if (response.status === 200) {
         toast.success("Profile updated successfully");
         if (response.data.token) {
@@ -201,7 +194,7 @@ const Profile = () => {
         }
       }
     } catch (error) {
-      // console.error('Save error:', error);
+      //console.error("Error updating profile:", error);
       toast.error(error.response?.data?.message || "Failed to update profile");
     } finally {
       setLoading(false);
@@ -214,15 +207,15 @@ const Profile = () => {
     if (currentToken) {
       const decodedToken = jwtDecode(currentToken);
       setFormdata({
-        name: decodedToken.name || "",
-        phoneNumber: decodedToken.phoneNumber || "",
-        branch: decodedToken.branch || "",
-        country: decodedToken.country || "",
-        majority: decodedToken.majority || "",
+        name: decodedToken.name,
+        phoneNumber: decodedToken.phoneNumber,
+        branch: decodedToken.branch,
+        country: decodedToken.country,
+        majority: decodedToken.majority,
       });
       setBankData({
-        bank: decodedToken.bank || "",
-        IFSC_Code: decodedToken.IFSC_Code || "",
+        bank: decodedToken.bank,
+        IFSC_Code: decodedToken.IFSC_Code,
       });
     }
   }, []);

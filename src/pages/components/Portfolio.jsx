@@ -93,8 +93,7 @@ const Portfolio = () => {
     console.error("Error adding item:", error);
   }
   };
-  const handleDelete = async (id) => {
-    console.log(id);
+  const handleDelete = async (id) => {    
     await axios.delete(`/api/v1/getTransacton_history/${id}`);
     setStock_value(stock_value.filter((item) => item._id !== id));
     setShowDelModal(false);

@@ -23,34 +23,12 @@ const FundBoard = () => {
     const storedToken = localStorage.getItem("auth");
     return storedToken ? JSON.parse(storedToken) : null;
   });
-
-    const handleDelete = async (id) => {
-      try {
-        await axios.delete(`/api/v1/getFund_history/${id}`);
-        console.log(fund,"array")
-        // setFund(fund.filter(item => item._id !== id));
-        setShowDelModal(false);
-        toast.success("Deleted successfully");
-        setItemToDelete(null);
-      } catch (error) {
-        toast.error(error.response?.data?.message || "Failed to delete");
-      }
-    };
-
-    // const openDelModal = (id) => {
-    //   setItemToDelete(id);
-    //   setShowDelModal(true);
-    // };
-    // const closeDelModal = () => {
-    //   setItemToDelete(null);
-    //   setShowDelModal(false);
-    // };
   
   useEffect(() => {
     if (token) {
       try {
         const decodedToken = jwtDecode(token);
-        console.log(decodedToken,"DECODE**********");
+        //console.log(decodedToken,"DECODE**********");
         setDecoded(decodedToken);
         axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       } catch (error) {
@@ -114,6 +92,19 @@ const FundBoard = () => {
         setToken(null);
         setDecoded(null);
       }
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`/api/v1/getFund_history/${id}`);
+      console.log(fund,"array")
+      // setFund(fund.filter(item => item._id !== id));
+      setShowDelModal(false);
+      toast.success("Deleted successfully");
+      setItemToDelete(null);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete");
     }
   };
 

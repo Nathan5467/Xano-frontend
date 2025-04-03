@@ -40,7 +40,7 @@ const LoginPage = () => {
     e.preventDefault();
     if (formData.email.length > 0 && formData.password.length > 0) {
       try {
-        // console.log(formData);
+        
         const response = await axios.post("/api/v1/login", formData);
         if (response.data.msg === "Email not found"){
           toast.error("email not found");
