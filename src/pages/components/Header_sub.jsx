@@ -6,8 +6,8 @@ import { jwtDecode } from "jwt-decode";
 const Header_sub = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [value, setValue] = useState();
-  const [token, setToken] = useState(
+  //const [value, setValue] = useState();
+  const [token] = useState(
     JSON.parse(localStorage.getItem("auth")) || ""
   );
   const decoded = jwtDecode(token);

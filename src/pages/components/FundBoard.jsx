@@ -1,34 +1,60 @@
 import React, { useEffect, useState } from "react";
 import axios from "../../API/axios";
 import { jwtDecode } from "jwt-decode";
+import { toast } from "react-toastify";
 
 const FundBoard = () => {
   const [currentAddpage, setAddpage] = useState(1);
   const [currentWithdrawpage, setWithdrawpage] = useState(1);
   const [fund, setFund] = useState(false);
-  const [amount, setAmount] = useState(0);
+  const [amount, setAmount] = useState("");
   const [withdraw, setwithdraw] = useState(false);
   const url = "/api/v1/getFund_history";
   const [transaction, setTransaction] = useState([]);
   const [totalFund, setTotalFund] = useState(0);
+  const [depoFund, setDepoFund] = useState(0);
+  const [withFund, setWithFund] = useState(0);
   const [decoded, setDecoded] = useState();
+  const [showDelModal, setShowDelModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   // Fix token initialization
   const [token, setToken] = useState(() => {
     const storedToken = localStorage.getItem("auth");
     return storedToken ? JSON.parse(storedToken) : null;
   });
+
+    const handleDelete = async (id) => {
+      try {
+        await axios.delete(`/api/v1/getFund_history/${id}`);
+        console.log(fund,"array")
+        // setFund(fund.filter(item => item._id !== id));
+        setShowDelModal(false);
+        toast.success("Deleted successfully");
+        setItemToDelete(null);
+      } catch (error) {
+        toast.error(error.response?.data?.message || "Failed to delete");
+      }
+    };
+
+    // const openDelModal = (id) => {
+    //   setItemToDelete(id);
+    //   setShowDelModal(true);
+    // };
+    // const closeDelModal = () => {
+    //   setItemToDelete(null);
+    //   setShowDelModal(false);
+    // };
   
   useEffect(() => {
     if (token) {
       try {
         const decodedToken = jwtDecode(token);
-        console.log(decodedToken,"DECODE**********")
+        console.log(decodedToken,"DECODE**********");
         setDecoded(decodedToken);
         axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       } catch (error) {
         console.error("Error decoding token:", error);
-        // Handle invalid token - you might want to redirect to login
         localStorage.removeItem("auth");
         setToken(null);
         setDecoded(null);
@@ -39,15 +65,34 @@ const FundBoard = () => {
   const calculateTotalFund = (transactions) => {
     let total = 0;
     transactions.forEach(trans => {
-      if (trans.Format === "fund") {
+      if (trans.Format === "fund" && trans.Type === "success" && trans.sender === decoded.email) {
         total += parseFloat(trans.amount);
-      } else if (trans.Format === "withdraw") {
+      } else if (trans.Format === "withdraw" && trans.Type === "success" && trans.sender === decoded.email) {
         total -= parseFloat(trans.amount);
       }
     });
+    decoded.balance = total;
+    axios.put(`/api/v1/UpdateUser/${decoded.id}`, { ...decoded, });
     return total;
   };
 
+  const calculateDepositFund = (transactions) => {
+    let depoFund = 0;
+    transactions.forEach(trans => {
+      if (trans.Format === "fund" && trans.Type === "success" && trans.sender === decoded.email) 
+        depoFund += parseFloat(trans.amount);
+    });
+    return depoFund;
+  };
+
+  const calculateWithdrawFund = (transactions) => {
+    let withFund = 0;
+    transactions.forEach(trans => {
+      if (trans.Format === "withdraw" && trans.Type === "success" && trans.sender === decoded.email) 
+        withFund += parseFloat(trans.amount);
+    });
+    return withFund;
+  };
   const fetchData = async () => {
     if (!token || !decoded) return;
 
@@ -59,11 +104,12 @@ const FundBoard = () => {
         return dateB - dateA;
       });
       setTransaction([...sortedData]);
+      setDepoFund(calculateDepositFund(sortedData));
+      setWithFund(calculateWithdrawFund(sortedData));
       setTotalFund(calculateTotalFund(sortedData));
     } catch (error) {
       console.error("Error fetching data:", error);
       if (error.response?.status === 401) {
-        // Handle unauthorized - you might want to redirect to login
         localStorage.removeItem("auth");
         setToken(null);
         setDecoded(null);
@@ -80,85 +126,89 @@ const FundBoard = () => {
   }, [token, decoded]);
 
   const sendWithdrawMessage = async () => {
-    if (!token || !decoded) return;
-
-    if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
-      alert("Please enter a valid amount");
+    if (!token || !decoded) {
+      alert("Please login first");
       return;
     }
-
-    if (parseFloat(amount) > totalFund) {
-      alert("Insufficient funds");
-      return;
-    }
-
-    const now = new Date();
-    const formattedDate = `${now.getFullYear()}-${(now.getMonth() + 1)
-      .toString()
-      .padStart(2, "0")}-${now.getDate().toString().padStart(2, "0")}`;
-    const formattedTime = `${now.getHours().toString().padStart(2, "0")}:${now
-      .getMinutes()
-      .toString()
-      .padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
-
-    const withdraw_fund = {
-      sender: decoded.email,
-      Format: "withdraw",
-      Date: formattedDate,
-      Time: formattedTime,
-      Transaction_id: "c12b001a15f9bd46ef1c6551386c6a2bcda1ab3eae5091fba",
-      Type: "pending",
-      amount: parseFloat(amount),
-    };
 
     try {
+      const amountNum = parseFloat(amount);
+      if (!amount || isNaN(amountNum) || amountNum <= 0) {
+        alert("Please enter a valid amount");
+        return;
+      }
+
+      if (amountNum > totalFund) {
+        alert(`Insufficient funds. Your current balance is $${totalFund}`);
+        return;
+      }
+
+      const now = new Date();
+      const formattedDate = `${now.getDate().toString().padStart(2, "0")}/${(now.getMonth() + 1).toString().padStart(2, "0")}/${now.getFullYear()}`;
+      const formattedTime = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
+
+      const withdraw_fund = {
+        sender: decoded.email,
+        Format: "withdraw",
+        Date: formattedDate,
+        Time: formattedTime,
+        Transaction_id: decoded.bank,
+        Name: decoded.name,
+        Type: "pending",
+        amount: amountNum,
+      };
+
       const response = await axios.post(url, withdraw_fund);
       setTransaction([...response.data.fund]);
+      setWithFund(calculateWithdrawFund(response.data.fund));
       setTotalFund(calculateTotalFund(response.data.fund));
       setwithdraw(false);
-      setAmount(0);
+      setAmount("");
+      alert("Withdrawal request submitted successfully!");
     } catch (error) {
       console.error("Error withdrawing funds:", error);
-      alert("Failed to withdraw funds. Please try again.");
+      alert(error.response?.data?.message || "Failed to withdraw funds. Please try again.");
     }
   };
 
   const sendMessage = async () => {
-    if (!token || !decoded) return;
-
-    if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
-      alert("Please enter a valid amount");
+    if (!token || !decoded) {
+      alert("Please login first");
       return;
     }
 
-    const now = new Date();
-    const formattedDate = `${now.getFullYear()}-${(now.getMonth() + 1)
-      .toString()
-      .padStart(2, "0")}-${now.getDate().toString().padStart(2, "0")}`;
-    const formattedTime = `${now.getHours().toString().padStart(2, "0")}:${now
-      .getMinutes()
-      .toString()
-      .padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
-
-    const post_fund = {
-      sender: decoded.email,
-      Format: "fund",
-      Date: formattedDate,
-      Time: formattedTime,
-      Transaction_id: "c12b001a15f9bd46ef1c6551386c6a2bcda1ab3eae5091fba",
-      Type: "pending",
-      amount: parseFloat(amount),
-    };
-
     try {
+      const amountNum = parseFloat(amount);
+      if (!amount || isNaN(amountNum) || amountNum <= 0) {
+        alert("Please enter a valid amount");
+        return;
+      }
+
+      const now = new Date();
+      const formattedDate = `${now.getDate().toString().padStart(2, "0")}/${(now.getMonth() + 1).toString().padStart(2, "0")}/${now.getFullYear()}`;
+      const formattedTime = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
+
+      const post_fund = {
+        sender: decoded.email,
+        Format: "fund",
+        Date: formattedDate,
+        Time: formattedTime,
+        Name: decoded.name,
+        Transaction_id: decoded.bank,
+        Type: "pending",
+        amount: amountNum,
+      };
+
       const response = await axios.post(url, post_fund);
       setTransaction([...response.data.fund]);
+      setDepoFund(calculateDepositFund(response.data.fund));
       setTotalFund(calculateTotalFund(response.data.fund));
       setFund(false);
-      setAmount(0);
+      setAmount("");
+      alert("Funds added successfully!");
     } catch (error) {
       console.error("Error adding funds:", error);
-      alert("Failed to add funds. Please try again.");
+      alert(error.response?.data?.message || "Failed to add funds. Please try again.");
     }
   };
 
@@ -171,81 +221,100 @@ const FundBoard = () => {
 
   return (
     <>
-   {!decoded || <div className="container mt-4">
-      <div className="card shadow-sm mb-4">
-        <div className="card-body">
-          <div className="row">
-            <div className="col-md-6">
-              <div className="bg-light text-center p-3 d-flex justify-content-between align-items-center rounded mb-3 border">
-                <div className="text-start">
-                  <h5 className="font-18 m-0 text-primary">
-                    ${totalFund.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      {!decoded || <div className="container mt-4">
+        <div className="card shadow-sm mb-4">
+          <div className="card-body">
+            <div className="row">
+              <div className="col-md-6">
+                <div className="bg-light text-center p-3 d-flex justify-content-between align-items-center rounded mb-3 border">
+                  <div className="text-start">
+                    <h5 className="font-18 m-0 text-primary">
+                      $ {totalFund.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </h5>
+                    <p className="mb-0 fw-semibold text-muted">Your Balance</p>
+                  </div>                  
+                  {(decoded.bank === "Unlinked") ?
+                    (<div>                    
+                      <button
+                        disabled = {true} 
+                        className="btn btn-sm btn-secondary me-2"
+                        //onClick={() => setFund(true)}
+                      >
+                        Deposit Funds
+                      </button>
+                      <button
+                        disabled = {true}
+                        className="btn btn-sm btn-sseconday"
+                        //onClick={() => setwithdraw(true)}
+                      >
+                        Withdraw Funds
+                      </button>
+                    </div>)
+                  :(<div>                    
+                      <button
+                        type="button" 
+                        className="btn btn-sm btn-success me-2"
+                        onClick={() => setFund(true)}
+                      >
+                        Deposit Funds
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-danger"
+                        onClick={() => setwithdraw(true)}
+                      >
+                        Withdraw Funds
+                      </button>
+                    </div>)}
+                </div>
+                <div className="border rounded p-3">
+                  <h5 className="m-0 font-15 mb-3">
+                    <img
+                      src="https://www.vectorlogo.zone/logos/bankofamerica/bankofamerica-ar21.svg"
+                      alt="US Bank"
+                      height="50"
+                      className="me-2"
+                    />
                   </h5>
-                  <p className="mb-0 fw-semibold text-muted">Total Funds</p>
-                </div>
-                <div>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-success me-2"
-                    onClick={() => setFund(true)}
-                  >
-                    Add Funds
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-danger"
-                    onClick={() => setwithdraw(true)}
-                  >
-                    Withdraw Funds
-                  </button>
-                </div>
-              </div>
-              <div className="border rounded p-3">
-                <h5 className="m-0 font-15 mb-3">
-                  <img
-                    src="https://www.vectorlogo.zone/logos/bankofamerica/bankofamerica-ar21.svg"
-                    alt="US Bank"
-                    height="50"
-                    className="me-2"
-                  />
-                </h5>
-                <div className="row">
-                  <div className="col-4">
-                    <h6 className="m-0 text-muted">Account Number</h6>
-                    <p className="mb-0">{decoded.bank}</p>
-                  </div>
-                  <div className="col-4">
-                    <h6 className="m-0 text-muted">IFSC Code</h6>
-                    <p className="mb-0">COLI000521</p>
-                  </div>
-                  <div className="col-4">
-                    <h6 className="m-0 text-muted">Branch</h6>
-                    <p className="mb-0">{decoded.branch} {decoded.country}</p>
+                  <div className="row" style={{ color: "green"}}>
+                    <div className="col-4">
+                      <h6 className="m-0" style={{ color: "gold"}}>Account Number</h6>
+                      <p className="mb-0">{decoded.bank}</p>
+                    </div>
+                    <div className="col-4">
+                      <h6 className="m-0" style={{ color: "gold"}}>IFSC Code</h6>
+                      <p className="mb-0">{decoded.IFSC_Code}</p>
+                    </div>
+                    <div className="col-4">
+                      <h6 className="m-0" style={{ color: "gold"}}>Branch</h6>
+                      <p className="mb-0">{decoded.branch} {decoded.country}</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            <div className="col-md-6">
-              <div className="text-center mb-3">
-                <span className="h5 text-primary">$58,451.25</span>
-                <h6 className="text-uppercase font-11 text-muted mt-2 m-0">
-                  Amount Invested
-                </h6>
+              <div className="col-md-6">
+                <div className="text-center mb-3">
+                  <span className="h5 text-primary">Hi! {decoded.name}</span>
+                  <h6 className="text-uppercase font-11 mt-2 m-0" style={{ color: "blue"}}>
+                    Welcome to our Bank!
+                  </h6>
+                </div>
+                <hr className="hr-dashed" />
+                <ul className="list-group list-group-flush mb-3">
+                  <li className="list-group-item d-flex justify-content-between">
+                    Deposite <span className="fw-semibold text-success">$ {depoFund.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </li>
+                  <li className="list-group-item d-flex justify-content-between">
+                    Withdraw <span className="fw-semibold" style={{ color: 'gray' }}>$ {withFund.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </li>
+                </ul>
               </div>
-              <hr className="hr-dashed" />
-              <ul className="list-group list-group-flush mb-3">
-                <li className="list-group-item d-flex justify-content-between">
-                  Opening Balance <span className="fw-semibold" style={{ color: 'gold' }}>$5521.50</span>
-                </li>
-                <li className="list-group-item d-flex justify-content-between">
-                  Funds used <span className="fw-semibold" style={{ color: 'gray' }}>$2100.00</span>
-                </li>
-              </ul>
             </div>
           </div>
         </div>
-      </div>
-      <div className="card shadow-sm">
+
+        {/* Rest of your existing JSX code remains the same until the modals */}
+        <div className="card shadow-sm">
         <div className="card-header bg-primary text-white">
           <div className="row align-items-center">
             <div className="col">
@@ -255,19 +324,19 @@ const FundBoard = () => {
               <ul className="nav nav-tabs tab-nagative-m" role="tablist">
                 <li className="nav-item">
                   <a
-                    className="nav-link active btn-danger"
+                    className="nav-link active btn-danger text-info"
                     data-bs-toggle="tab"
                     href="#Added"
                     role="tab"
                     aria-selected="true"
                     style={{ backgroundColor: 'info', color: 'gray' }}
                   >
-                    Added
+                    Deposit
                   </a>
                 </li>
                 <li className="nav-item btn-danger">
                   <a
-                    className="nav-link"
+                    className="nav-link text-info"
                     data-bs-toggle="tab"
                     href="#Withdrown"
                     role="tab"
@@ -297,8 +366,12 @@ const FundBoard = () => {
                       <th>Date</th>
                       <th>Time</th>
                       <th>Transaction ID</th>
+                      <th>Client</th>
                       <th>Type</th>
                       <th>Amount</th>
+                      {decoded.role === "admin" && (
+                        <th>Actions</th>
+                      )}
                     </tr>
                   </thead>
 
@@ -314,12 +387,38 @@ const FundBoard = () => {
                                 <td>{item.Date}</td>
                                 <td>{item.Time}</td>
                                 <td>{item.Transaction_id}</td>
+                                <td>{item.sender}</td>
                                 <td>
-                                  <span className ={(item.Type==="success")?"text-success":(item.Type === "pending"?"text-warning":"text-danger")}>
-                                    {item.Type}
-                                  </span>
+                                  {item.Type === "donation" ? (<h6 className="bold" style={{color:"gold"}}>donation</h6>
+                                    
+                                  ):<span className ={(item.Type==="success")?"text-success":(item.Type === "pending"?"text-primary":"text-danger")}>
+                                  {item.Type}
+                                </span>}
+                                  
                                 </td>
                                 <td>${item.amount}</td>
+                                {decoded.role === "admin" && (
+                                  <td>
+                                    {/* <button
+                                      className="btn btn-sm btn-primary me-2"
+                                      onClick={() => {
+                                        setSelectItem(item);
+                                        setShowModal(true);
+                                      }}
+                                    >
+                                      Edit
+                                    </button> */}
+                                    <button
+                                      className="btn btn-sm btn-danger"
+                                      onClick={() => {
+                                        setItemToDelete(item._id);
+                                        setShowDelModal(true);
+                                      }}
+                                    >
+                                      Delete
+                                    </button>
+                                  </td>
+                                )}
                               </tr>
                             );
                       })}
@@ -382,10 +481,14 @@ const FundBoard = () => {
                     <tr>
                       <th>No</th>
                       <th>Date</th>
-                      <th>Time</th>
+                      <th>Time</th>                   
                       <th>Transaction ID</th>
+                      <th>Client</th>
                       <th>Type</th>
                       <th>Amount</th>
+                      {decoded.role === "admin" && (
+                        <th>Actions</th>
+                      )}
                     </tr>
                   </thead>
 
@@ -399,14 +502,37 @@ const FundBoard = () => {
                               <tr>
                                 <td>{index + 1}</td>
                                 <td>{item.Date}</td>
-                                <td>{item.Time}</td>
+                                <td>{item.Time}</td>                               
                                 <td>{item.Transaction_id}</td>
+                                <td>{item.sender}</td>
                                 <td>
-                                  <span className ={(item.Type==="success")?"text-success":(item.Type === "pending"?"text-warning":"text-danger")}>
+                                  <span className ={(item.Type==="success")?"text-success":(item.Type === "pending"?"text-primary":"text-danger")}>
                                     {item.Type}
                                   </span>
                                 </td>
                                 <td>${item.amount}</td>
+                                {decoded.role === "admin" && (
+                                  <td>
+                                    {/* <button
+                                      className="btn btn-sm btn-primary me-2"
+                                      onClick={() => {
+                                        setSelectItem(item);
+                                        setShowModal(true);
+                                      }}
+                                    >
+                                      Edit
+                                    </button> */}
+                                    <button
+                                      className="btn btn-sm btn-danger"
+                                      onClick={() => {
+                                        setItemToDelete(item._id);
+                                        setShowDelModal(item._id);
+                                      }}
+                                    >
+                                      Delete
+                                    </button>
+                                  </td>
+                                )}
                               </tr>
                             );
                       })}
@@ -464,78 +590,152 @@ const FundBoard = () => {
           </div>
         </div>
       </div>
-      {fund && (
-        <div
-          className="modal fade show"
-          style={{ display: "block" }}
-          tabIndex="1"
-          role="dialog"
-        >
-          <div className="modal-dialog" role="document">
-            <div className="modal-content p-4">
-              <div className="card p-4 shadow-sm" style={{ width: "450px" }}>
-                <h2 className="text-center mb-4">Enter Amount</h2>
-                <div className="mb-3">
-                  <button className="btn btn-outline-primary me-2">
-                    Current: ${totalFund.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </button>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Enter amount"
-                    onChange={(e) => setAmount(e.target.value)}
-                  />
+
+        {fund && (
+          <div
+            className="modal fade show"
+            style={{ display: "block" }}
+            tabIndex="1"
+            role="dialog"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setFund(false);
+                setAmount("");
+              }
+            }}
+          >
+            <div className="modal-dialog" role="document">
+              <div className="modal-content p-4">
+                <div className="d-flex justify-content-end">
+                  <button 
+                    type="button" 
+                    className="btn-close" 
+                    onClick={() => {
+                      setFund(false);
+                      setAmount("");
+                    }}
+                  ></button>
                 </div>
-                <button
-                  className="btn btn-success w-100"
-                  onClick={() => {
-                    sendMessage();
-                    setFund(false);
-                  }}
-                >
-                  Add Funds
-                </button>
+                <div className="card p-4 shadow-sm" style={{ width: "450px" }}>
+                  <h2 className="text-center mb-4">Enter Amount</h2>
+                  <div className="mb-3">
+                    <button className="btn btn-outline-primary me-2">
+                      Current: ${totalFund.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </button>
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="Enter amount"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  <button
+                    className="btn btn-success w-100"
+                    onClick={sendMessage}
+                  >
+                    Add Funds
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
-      {withdraw && (
-        <div
-          className="modal fade show"
-          style={{ display: "block" }}
-          tabIndex="1"
-          role="dialog"
-        >
-          <div className="modal-dialog" role="document">
-            <div className="modal-content p-4">
-              <div className="card p-4 shadow-sm" style={{ width: "450px" }}>
-                <h2 className="text-center mb-4">Enter Amount</h2>
-                <div className="mb-3">
-                  <button className="btn btn-outline-primary me-2">
-                    Current: ${totalFund.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </button>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Enter amount"
-                    onChange={(e) => setAmount(e.target.value)}
-                  />
+        )}
+
+        {withdraw && (
+          <div
+            className="modal fade show"
+            style={{ display: "block" }}
+            tabIndex="1"
+            role="dialog"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setwithdraw(false);
+                setAmount("");
+              }
+            }}
+          >
+            <div className="modal-dialog" role="document">
+              <div className="modal-content p-4">
+                <div className="d-flex justify-content-end">
+                  <button 
+                    type="button" 
+                    className="btn-close" 
+                    onClick={() => {
+                      setwithdraw(false);
+                      setAmount("");
+                    }}
+                  ></button>
                 </div>
-                <button
-                  className="btn btn-danger w-100"
-                  onClick={(e) => {
-                    sendWithdrawMessage(e);
-                  }}
-                >
-                  Withdraw Funds
-                </button>
+                <div className="card p-4 shadow-sm" style={{ width: "450px" }}>
+                  <h2 className="text-center mb-4">Enter Amount</h2>
+                  <div className="mb-3">
+                    <button className="btn btn-outline-primary me-2">
+                      Current: ${totalFund.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </button>
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="Enter amount"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  <button
+                    className="btn btn-danger w-100"
+                    onClick={sendWithdrawMessage}
+                  >
+                    Withdraw Funds
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>}
+        )}
+
+        {/* Delete Confirmation Modal */}
+      
+        {showDelModal && (
+          <div className="modal fade show" style={{ display: 'block' }}>
+            <div className="modal-dialog">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Confirm Delete</h5>
+                  <button 
+                    type="button" 
+                    className="btn-close"
+                    onClick={() => setShowDelModal(false)}
+                  />
+                </div>
+                <div className="modal-body">
+                  Are you sure you want to delete this order?
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setShowDelModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={() => handleDelete(itemToDelete)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      
+      </div>}
     </>
   );
 };

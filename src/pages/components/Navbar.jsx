@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Navbar, Nav} from "react-bootstrap";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast} from "react-toastify";
+import { ThemeToggle } from '../components/ThemeToggle';
 import { jwtDecode } from "jwt-decode"; // Use named import
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -9,6 +10,7 @@ import "bootstrap/dist/js/bootstrap.bundle.min";
 import "react-toastify/dist/ReactToastify.css";
 import "../../App.css";
 import axios from "../../API/axios";
+import { useTheme } from '../../context/ThemeContext';
 import logo from "../../assets/logo-sm.png";
 import {
   FaHome,
@@ -31,6 +33,7 @@ const TopNavbar = () => {
   const location = useLocation();
   const pathname = location.pathname; // This line was missing proper initialization
   const navigate = useNavigate(); // Move outside conditional block
+  const { isDarkMode } = useTheme();
   const [token] = useState(() => {
     try {
       const storedAuth = localStorage.getItem("auth");
@@ -73,7 +76,7 @@ const TopNavbar = () => {
     };
 
     fetchPending();
-    const interval = setInterval(fetchPending, 10000); // Fetch data every 10 seconds
+    const interval = setInterval(fetchPending, 500); // Fetch data every 10 seconds
     return () => clearInterval(interval);
   }, [token, navigate]); // Ensure this hook is not conditionally called
 
@@ -114,7 +117,7 @@ const TopNavbar = () => {
   const decoded = jwtDecode(token); // Use named import here
 
   return (
-    <Navbar bg="light" expand="lg" className="shadow-sm px-4 py-2">
+    <Navbar bg="light" expand="lg" className="shadow-sm px-4 py-2" isDarkMode={isDarkMode}>
       {/* Modal for Permission */}
       {flagItem && (
         <div className="modal" style={{ display: "block" }} tabIndex="1">
@@ -305,6 +308,11 @@ const TopNavbar = () => {
             </ul>
           </div>
         </Nav.Link>
+        <Navbar isDarkMode={isDarkMode}>
+          <div className="nav-controls">
+            <ThemeToggle />
+          </div>
+        </Navbar>
       </Nav>
     </Navbar>
   );

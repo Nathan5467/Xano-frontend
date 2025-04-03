@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import { Row, Col } from "react-bootstrap";
 import { jwtDecode } from "jwt-decode";
 
 const StockIndices = () => {
-  const [token, setToken] = useState(
+  const [token] = useState(
     JSON.parse(localStorage.getItem("auth")) || ""
   );
   const decoded = jwtDecode(token);
