@@ -68,7 +68,6 @@ const Order_main = () => {
     { name: "Type", tag: "Type" },
     { name: "Option", tag: "Option" },
     { name: "Net Qty.", tag: "Qty" },
-    { name: "Order Value", tag: "value" },
     { name: "CMP", tag: "CMP" },
     { name: "Order Price", tag: "price" },
   ];
@@ -164,14 +163,23 @@ const Order_main = () => {
         ) : (
           <StyledTable className="table table-bordered table-hover" isDarkMode={isDarkMode}>
             <thead>
-              <tr>
-                {header_menu.map((item, index) => (
+              <tr className="text-center">
+                {/* {header_menu.map((item, index) => (
                   <th key={index}>{item.name}</th>
-                ))}
+                ))} */}
+                <th>Name</th>
+                <th>Status</th>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Option</th>
+                <th>Net Qty.</th>
+                <th>Order Value</th>
+                <th>CMP</th>
+                <th>Order Price</th>
                 {decoded.role === "admin" && <th>Actions</th>}
               </tr>
             </thead>
-            <tbody>
+            <tbody className="text-center">
               {positions
                 .slice((page - 1) * 10, page * 10)
                 .map((item, index) => (
@@ -179,7 +187,7 @@ const Order_main = () => {
                     <td>{item.name}</td>
                     <td className="text-center">
                       <span className={`badge bg-${
-                        item.status === "successful" ? "success" :
+                        item.status === "success" ? "success" :
                         item.status === "pending" ? "warning" : "danger"
                       }`}>
                         {item.status}
@@ -194,7 +202,7 @@ const Order_main = () => {
                     </td>
                     <td>{item.Option}</td>
                     <td>{item.Qty}</td>
-                    <td>{item.value}</td>
+                    <td style={{ backgroundColor: "#f8f8f8" }}>{item.price * item.Qty}</td>
                     <td>{item.CMP}</td>
                     <td>{item.price}</td>
                     {decoded.role === "admin" && (

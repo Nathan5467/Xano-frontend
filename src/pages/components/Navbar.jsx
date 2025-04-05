@@ -28,8 +28,11 @@ import {
 const TopNavbar = () => {
   const [notification, setNotification] = useState(false);
   const [flagItem, setFlagItem] = useState(false);
+  const [flagPortfolioItem, setFlagPortfolioItem] = useState(false);
   const [selectedItem, setSelectedItem] = useState({});
+  const [selectedPortfolioItem, setSelectedPortfolioItem] = useState({});
   const [pending, setPending] = useState([]); // Define 'pending'
+  const [pendingPortfolio, setPendingPortfolio] = useState([]);
   const location = useLocation();
   const pathname = location.pathname; // This line was missing proper initialization
   const navigate = useNavigate(); // Move outside conditional block
@@ -63,7 +66,12 @@ const TopNavbar = () => {
       try {
         if (!token) return; // Don't fetch if no token
         const response = await axios.get("/api/v1/getpending");
+        //console.log("**************",response.data.fund);
+        const responsePortfolio = await axios.get("/api/v1/getPendingPortfolio");
+        console.log("-------------------",responsePortfolio.data.portf);
         setPending(response.data.fund || []);
+        setPendingPortfolio(responsePortfolio.data.portf || []);
+        console.log("Pending:", pending);
       } catch (error) {
         if (error.response?.status === 401) {
           localStorage.removeItem("auth");
@@ -92,12 +100,36 @@ const TopNavbar = () => {
     }
   };
 
+  const acceptPermissionPortfolio = async () => {
+    try {
+      const updatedItem = { ...selectedPortfolioItem, Type: "success" };
+      await axios.put("/api/v1/getpendingPortfolio", updatedItem);
+      setPendingPortfolio((prev) => prev.filter((item) => item.id !== selectedPortfolioItem.id)); // Update pending state
+      setFlagPortfolioItem(false);
+      toast.success("Permission accepted successfully", { autoClose: 300 });
+    } catch (error) {
+      toast.error("Failed to accept permission", { autoClose: 300 });
+    }
+  };
+
   const denyPermission = async () => {
     try {
       const updatedItem = { ...selectedItem, Type: "failed" };
       await axios.put("/api/v1/getpending", updatedItem);
       setPending((prev) => prev.filter((item) => item.id !== selectedItem.id)); // Update pending state
       setFlagItem(false);
+      toast.success("Permission denied successfully", { autoClose: 300 });
+    } catch (error) {
+      toast.error("Failed to deny permission", { autoClose: 300 });
+    }
+  };
+
+  const denyPermissionPortfolio = async () => {
+    try {
+      const updatedItem = { ...selectedPortfolioItem, Type: "failed" };
+      await axios.put("/api/v1/getpendingPortfolio", updatedItem);
+      setPending((prev) => prev.filter((item) => item.id !== selectedPortfolioItem.id)); // Update pending state
+      setFlagPortfolioItem(false);
       toast.success("Permission denied successfully", { autoClose: 300 });
     } catch (error) {
       toast.error("Failed to deny permission", { autoClose: 300 });
@@ -165,6 +197,54 @@ const TopNavbar = () => {
           </div>
         </div>
       )}
+      {/* Modal for Permission */}
+      {flagPortfolioItem && (
+        <div className="modal" style={{ display: "block" }} tabIndex="1">
+          <div className="modal-dialog">
+            <div className="modal-content p-4">
+              <div className="card p-4" style={{ width: "450px" }}>
+                <h2 className="text-center">Permission</h2>
+                <div className="mb-3">
+                  <button className="btn btn-outline-primary me-2">From</button>
+                  <input
+                    type="text"
+                    className="btn btn-outline-primary me-2"
+                    value={selectedPortfolioItem.owner}
+                    readOnly
+                  />
+                </div>
+                <div className="mb-3">
+                  <button className="btn btn-outline-primary me-2">Stocks</button>
+                  <input
+                    type="text"
+                    className="btn btn-outline-primary me-2"
+                    value={`$${selectedPortfolioItem.stocks}`}
+                    readOnly
+                  />
+                </div>
+                <div className="mb-3">
+                  <button className="btn btn-outline-primary me-2">Qty</button>
+                  <input
+                    type="text"
+                    className="btn btn-outline-primary me-2"
+                    value={selectedPortfolioItem.qty}
+                    readOnly
+                  />
+                </div>
+                <div className="d-flex">
+                  <button className="btn btn-success w-100 me-2" onClick={acceptPermissionPortfolio}>
+                    Accept
+                  </button>
+                  <button className="btn btn-danger w-100" onClick={denyPermissionPortfolio}>
+                    Deny
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* Navbar Brand */}
       <Navbar.Brand>
@@ -218,7 +298,7 @@ const TopNavbar = () => {
                 className="position-relative"
                 onClick={() => setNotification(!notification)}
               />
-              {pending.length > 0 && (
+              {pending.length + pendingPortfolio.length > 0 && (
                 <span
                   className="badge bg-danger position-absolute"
                   style={{
@@ -229,7 +309,7 @@ const TopNavbar = () => {
                     padding: "3px 6px",
                   }}
                 >
-                  {pending.length}
+                  {pending.length + pendingPortfolio.length}
                 </span>
               )}
             </div>
@@ -245,7 +325,7 @@ const TopNavbar = () => {
               >
                 <div className="p-3 border-bottom">
                   <strong>Notifications</strong>
-                  <span className="float-end">{pending.length}</span>
+                  <span className="float-end">{pending.length + pendingPortfolio.length}</span>
                 </div>
                 <div className="p-3" style={{ maxHeight: "200px", overflowY: "auto" }}>
                   {pending.map((item, index) => (
@@ -258,7 +338,24 @@ const TopNavbar = () => {
                       }}
                     >
                       <span>{item.sender}</span>
+                      <span>{item.Format}</span>
                       <span className="text-muted">${item.amount}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-3" style={{ maxHeight: "200px", overflowY: "auto" }}>
+                  {pendingPortfolio.map((item, index) => (
+                    <div
+                      key={index}
+                      className="d-flex justify-content-between align-items-center py-2"
+                      onClick={() => {
+                        setSelectedPortfolioItem(item);
+                        setFlagPortfolioItem(true);                       
+                      }}
+                    >
+                      <span>{item.owner}</span>
+                      <span>{item.stocks}</span>
+                      <span className="text-muted">${item.qty}</span>
                     </div>
                   ))}
                 </div>

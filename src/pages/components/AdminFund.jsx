@@ -107,7 +107,7 @@ const AdminFund = () => {
         {/* Fund Information */}
         <div className="col">
           <p className="border-bottom pb-1 mb-2 font-14" style={{ color: "green" }}>
-            Community Donation
+            Fund Available
           </p>
           {isLoading ? (
             <div className="spinner-border spinner-border-sm text-primary" role="status">
@@ -139,9 +139,9 @@ const AdminFund = () => {
               Processing...
             </>
           ) : isAdmin ? (
-            "Initialize Fund"
+            "Initialize Funds"
           ) : (
-            "Donate Fund"
+            "Add Funds"
           )}
         </button>
       </div>
