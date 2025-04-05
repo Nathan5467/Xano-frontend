@@ -43,9 +43,9 @@ const FundBoard = () => {
   const calculateTotalFund = (transactions) => {
     let total = 0;
     transactions.forEach(trans => {
-      if (trans.Format === "fund" && trans.Type === "success" && trans.sender === decoded.email) {
+      if (trans.Format === "fund" && trans.Type === "success" && trans.sender === decoded.name) {
         total += parseFloat(trans.amount);
-      } else if (trans.Format === "withdraw" && trans.Type === "success" && trans.sender === decoded.email) {
+      } else if (trans.Format === "withdraw" && trans.Type === "success" && trans.sender === decoded.name) {
         total -= parseFloat(trans.amount);
       }
     });
@@ -57,7 +57,7 @@ const FundBoard = () => {
   const calculateDepositFund = (transactions) => {
     let depoFund = 0;
     transactions.forEach(trans => {
-      if (trans.Format === "fund" && trans.Type === "success" && trans.sender === decoded.email) 
+      if (trans.Format === "fund" && trans.Type === "success" && trans.sender === decoded.name) 
         depoFund += parseFloat(trans.amount);
     });
     return depoFund;
@@ -66,7 +66,7 @@ const FundBoard = () => {
   const calculateWithdrawFund = (transactions) => {
     let withFund = 0;
     transactions.forEach(trans => {
-      if (trans.Format === "withdraw" && trans.Type === "success" && trans.sender === decoded.email) 
+      if (trans.Format === "withdraw" && trans.Type === "success" && trans.sender === decoded.name) 
         withFund += parseFloat(trans.amount);
     });
     return withFund;
@@ -139,7 +139,7 @@ const FundBoard = () => {
       const formattedTime = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
 
       const withdraw_fund = {
-        sender: decoded.email,
+        sender: decoded.name,
         Format: "withdraw",
         Date: formattedDate,
         Time: formattedTime,
@@ -180,7 +180,7 @@ const FundBoard = () => {
       const formattedTime = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
 
       const post_fund = {
-        sender: decoded.email,
+        sender: decoded.name,
         Format: "fund",
         Date: formattedDate,
         Time: formattedTime,
@@ -351,8 +351,8 @@ const FundBoard = () => {
             >
               <div className="table-responsive dash-social">
                 <table className="table table-bordered table-hover">
-                  <thead className="thead-light">
-                    <tr>
+                  <thead className="thead-light text-center">
+                    <tr className="text-center">
                       <th>No</th>
                       <th>Date</th>
                       <th>Time</th>
@@ -366,14 +366,14 @@ const FundBoard = () => {
                     </tr>
                   </thead>
 
-                  <tbody>
+                  <tbody class name="table-group-divider text-center" style={{ color: "blue" }}>
                     {transaction
                       .filter((items) => items.Format === "fund")
                       .map((item, index) => {
                         if (index > 10 * currentAddpage - 11)
                           if (index < 10 * currentAddpage)
                             return (
-                              <tr>
+                              <tr className="text-center">
                                 <td>{index + 1}</td>
                                 <td>{item.Date}</td>
                                 <td>{item.Time}</td>
@@ -469,7 +469,7 @@ const FundBoard = () => {
               <div className="table-responsive dash-social">
                 <table className="table table-bordered table-hover">
                   <thead className="thead-light">
-                    <tr>
+                    <tr className="text-center">
                       <th>No</th>
                       <th>Date</th>
                       <th>Time</th>                   
@@ -490,7 +490,7 @@ const FundBoard = () => {
                         if (index > 10 * currentWithdrawpage - 11)
                           if (index < 10 * currentWithdrawpage)
                             return (
-                              <tr>
+                              <tr className="text-center">
                                 <td>{index + 1}</td>
                                 <td>{item.Date}</td>
                                 <td>{item.Time}</td>                               
