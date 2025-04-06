@@ -35,7 +35,6 @@ const FundBoard = () => {
   const handleEdit = async(e) => {
     e.preventDefault();
     try {
-      console.log("****************",editFormData);
       await axios.put(`/api/v1/getFund_history/${editItem._id}`, editFormData);
       setShowDelModal(false);
       setEditItem(null);
@@ -58,7 +57,6 @@ const FundBoard = () => {
     if (token) {
       try {
         const decodedToken = jwtDecode(token);
-        //console.log(decodedToken,"DECODE**********");
         setDecoded(decodedToken);
         axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       } catch (error) {
@@ -169,6 +167,7 @@ const FundBoard = () => {
       const formattedTime = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
 
       const withdraw_fund = {
+        sender: decoded.name,
         Format: "withdraw",
         Date: formattedDate,
         Time: formattedTime,
@@ -177,7 +176,7 @@ const FundBoard = () => {
         Type: "pending",
         amount: amountNum,
       };
-
+;
       const response = await axios.post(url, withdraw_fund);
       setTransaction([...response.data.fund]);
       setWithFund(calculateWithdrawFund(response.data.fund));
@@ -209,6 +208,7 @@ const FundBoard = () => {
       const formattedTime = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
 
       const post_fund = {
+        sender: decoded.name,
         Format: "fund",
         Date: formattedDate,
         Time: formattedTime,
@@ -401,6 +401,7 @@ const FundBoard = () => {
                         if (index > 10 * currentAddpage - 11)
                           if (index < 10 * currentAddpage)
                             return (
+                              (item.sender === decoded.name || decoded.role === "admin" ) && 
                               <tr className="text-center">
                                 <td>{index + 1}</td>
                                 <td>{item.Date}</td>
@@ -525,6 +526,7 @@ const FundBoard = () => {
                         if (index > 10 * currentWithdrawpage - 11)
                           if (index < 10 * currentWithdrawpage)
                             return (
+                              (item.sender === decoded.name || decoded.role === "admin" ) && 
                               <tr className="text-center">
                                 <td>{index + 1}</td>
                                 <td>{item.Date}</td>

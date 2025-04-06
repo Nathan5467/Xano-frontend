@@ -13,6 +13,7 @@ const AdminFund = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [balance, setBalance] = useState(decoded.balance);
 
   useEffect(() => {
     fetchTotalFund();
@@ -47,7 +48,7 @@ const AdminFund = () => {
     setIsLoading(true);
     setError("");
     setSuccess("");
-
+    setBalance(decoded.balance);
     const now = new Date();
     const formattedDate = `${now.getDate().toString().padStart(2, "0")}/${(now.getMonth() + 1)
       .toString()
@@ -65,27 +66,26 @@ const AdminFund = () => {
         Date: formattedDate,
         Time: formattedTime,
         Transaction_id:decoded.bank,
-        Type: "donation",
+        Type: "pending",
         amount: parseFloat(amount),
       };
-
+      
       await axios.post("/api/v1/getFund_history", post_fund);
-
+      
       // Update total fund
-      const newTotal = isAdmin ? parseFloat(amount) : totalFund + parseFloat(amount);
-      await axios.post("/api/v1/getTotal_fund", [
-        {
-          name: "total",
-          value: newTotal.toString(),
-        },
-      ]);
-
-      setTotalFund(newTotal);
-      setAmount("");
+      // const newTotal = isAdmin ? parseFloat(amount) : totalFund + parseFloat(amount);
+      // await axios.post("/api/v1/getTotal_fund", [
+      //   {
+      //     name: "total",
+      //     value: newTotal.toString(),
+      //   },
+      // ]);
+      // setTotalFund(newTotal);
+      // setAmount("");
       setSuccess(isAdmin ? "Total fund updated successfully!" : "Funds added successfully!");
       setTimeout(() => {
         setShowDialog(false);
-      }, 200);
+      }, 500);
     } catch (error) {
       setError("Failed to process request. Please try again.");
       console.error("Error processing fund:", error);
@@ -93,6 +93,15 @@ const AdminFund = () => {
       setIsLoading(false);
     }
   };
+
+  // const getBalance = (data, userName)  => { 
+  //   const user = data.user.find(user => user.name === userName);
+  //   return user ? user.balance : null;
+
+  // }
+  // const data = axios.get("/api/v1/getAllUsers");
+  // console.log("***************", data);
+  
 
   const handleCloseDialog = () => {
     setShowDialog(false);
@@ -115,7 +124,8 @@ const AdminFund = () => {
             </div>
           ) : (
             <h3 className="my-1 font-20 fw-bold text-primary">
-              ${totalFund.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {/* ${totalFund.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} */}
+              ${balance}
             </h3>
           )}
         </div>
@@ -171,9 +181,9 @@ const AdminFund = () => {
                   </div>
                 )}
                 <div className="mb-3">
-                  <p className="text-muted">
+                  {/* <p className="text-muted">
                     Current Balance: ${totalFund.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
+                  </p> */}
                   <div className="input-group">
                     <span className="input-group-text">$</span>
                     <input
