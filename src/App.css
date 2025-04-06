@@ -1,0 +1,55 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+.hover-button:hover {
+  /* border-radius: 10px; */
+  background-color: rgb(209, 204, 204);
+  padding: 20px;
+  text-decoration: double;
+  transition: all 1s;
+}
+.hover-button {
+  padding: 10px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s; /* Adds a smooth transition */
+}
+.App-link {
+  color: #61dafb;
+}
+
+.close:hover {
+  color: red;            /* Change to desired hover color */
+  background: none;      /* OPTIONAL: If you want to ensure no background on hover */
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
