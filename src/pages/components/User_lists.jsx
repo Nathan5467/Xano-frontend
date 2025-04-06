@@ -3,18 +3,14 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useDispatch, useSelector } from 'react-redux'; // Add this
 import axios from "../../API/axios";
 import { MDBTable, MDBTableHead, MDBTableBody } from "mdb-react-ui-kit";
-import { Button, Modal, Pagination } from "react-bootstrap";
 import { FaSort } from "react-icons/fa";
 import "bootstrap/dist/css/bootstrap.min.css";
 import UserEdit from "./UserEdit";
 import { updateUser, deleteUser, setUsers } from '../../redux/slice/userSlice'; // Add this
+import { toast } from 'react-toastify';
+import { Button, Modal, Pagination, Form } from "react-bootstrap";
 
 
-const API_ENDPOINTS = {
-  GET_USERS: '/api/v1/getAllusers',
-  UPDATE_USER: '/api/v1/updateUser',
-  DELETE_USER: '/api/v1/deleteUser'
-};
 
 const User_lists = () => {
   const dispatch = useDispatch(); // Add this
@@ -29,6 +25,11 @@ const User_lists = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [currentUserRole, setCurrentUserRole] = useState('');
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetPasswordUser, setResetPasswordUser] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
 
   useEffect(() => {
     if (token) {
@@ -56,6 +57,50 @@ const User_lists = () => {
       console.error("Error:", error.response ? error.response.data : error.message);
     }
   }, [dispatch, sortDirection]);
+
+  const handleResetPassword = (userId) => {
+    setResetPasswordUser(userId);
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowResetModal(true);
+  };
+  
+  const closeResetModal = () => {
+    setResetPasswordUser(null);
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowResetModal(false);
+  };
+  
+  const submitPasswordReset = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+  
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+  
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters long");
+      return;
+    }
+    try {
+      const response = await axios.put(`/api/v1/resetPassword/${resetPasswordUser}`, {
+        newPassword
+      });
+  
+      if (response.status === 200) {
+        toast.success("Password reset successful");
+        closeResetModal();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to reset password");
+    }
+  };
+  
 
   const handleDelete = async (id) => {
     try {
@@ -141,6 +186,7 @@ const User_lists = () => {
       <MDBTable align="middle" hover responsive>
         <MDBTableHead>
           <tr className="text-center">
+            <th scope="col-1"></th>
             <th scope="col-1">Name</th>
             <th scope="col-1">Country/City</th>
             <th scope="col-1">Position</th>
@@ -157,20 +203,23 @@ const User_lists = () => {
         <MDBTableBody>
           {currentUsers.map((user) => (
             <tr key={user._id} className="text-center">
+              <td className="text-center">
+                <img
+                  src={user.avatar}
+                  alt="Avatar"
+                  className="rounded-circle"
+                  width="50"
+                  height="50"
+                />
+              </td>
               <td>
-                <div className="d-flex align-items-center">
-                  <img
-                    src={user.avatar}
-                    alt="avatar"
-                    style={{ width: "45px", height: "45px" }}
-                    className="rounded-circle"
-                  />
+                <div className="d-flex align-items-center">                  
                   <div className="ms-2">
                     <p className="fw-bold mb-1">{user.name}</p>
-                    <p className="text-muted mb-0">{user.email}</p>
+                    <p className="text-muted mb-0">{user.email}</p>                                      
                   </div>
                 </div>
-              </td>
+              </td>             
               <td>
                 <p className="fw-bold mb-1">{user.country}</p>
                 <p className="text-muted mb-0">{user.branch}</p>
@@ -192,17 +241,22 @@ const User_lists = () => {
                   }}
                 ></span>
               </td>
-              {/* <td className={user.logstatus ? "text-success" : "text-warning"}>
-                {user.logstatus ? "Logged In" : "Logged Out"}
-              </td> */}
               <td className={user.role === "admin" ? "text-danger" : "text-primary"}>
                 {user.role}
               </td>
               <td>{user.phoneNumber}</td>
               <td>{user.bank}</td>
-              <td>{user.balance}</td>
+              <td>{user.balance}</td>             
               {canEditDelete && (
                 <td>
+                  <Button
+                    className="me-2"
+                    variant="warning"
+                    size="sm"
+                    onClick={() => handleResetPassword(user._id)} 
+                  >
+                    Reset Password
+                  </Button>
                   <Button
                     className="me-2"
                     variant="primary"
@@ -211,6 +265,7 @@ const User_lists = () => {
                   >
                     Edit
                   </Button>
+
                   {user.role !== "admin" && (
                     <Button
                       variant="danger"
@@ -291,6 +346,45 @@ const User_lists = () => {
           )}
         </Modal.Body>
       </Modal>
+
+      {/* Reset Password Modal */}
+      <Modal show={showResetModal} onHide={closeResetModal} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Reset Password</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>New Password</Form.Label>
+              <Form.Control
+                type="password"
+                placeholder="Enter new password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Confirm Password</Form.Label>
+              <Form.Control
+                type="password"
+                placeholder="Confirm new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={closeResetModal}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={submitPasswordReset}>
+            Reset Password
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
     </div>
   );
 };

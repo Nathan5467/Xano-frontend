@@ -146,46 +146,46 @@ const Profile = () => {
   }, [token]);
 
   // Handle bank details update
-  const handleBankEdit = () => {
-    setBankData({
-      bank: decoded?.bank || '',
-      IFSC_Code: decoded?.IFSC_Code || ''
-    });
-    setIsEditingBank(true);
-  };
+  // const handleBankEdit = () => {
+  //   setBankData({
+  //     bank: decoded?.bank || '',
+  //     IFSC_Code: decoded?.IFSC_Code || ''
+  //   });
+  //   setIsEditingBank(true);
+  // };
 
-  const handleBankCancel = () => {
-    setIsEditingBank(false);
-    setBankData({
-      bank: decoded?.bank || '',
-      IFSC_Code: decoded?.IFSC_Code || ''
-    });
-  };
+  // const handleBankCancel = () => {
+  //   setIsEditingBank(false);
+  //   setBankData({
+  //     bank: decoded?.bank || '',
+  //     IFSC_Code: decoded?.IFSC_Code || ''
+  //   });
+  // };
 
-  const handleBankSave = async () => {
-    if (isSubmitting || !decoded?.id) return;
+  // const handleBankSave = async () => {
+  //   if (isSubmitting || !decoded?.id) return;
 
-    try {
-      setIsSubmitting(true);
-      setLoading(true);
+  //   try {
+  //     setIsSubmitting(true);
+  //     setLoading(true);
       
-      const response = await axios.put(`/api/v1/updateUser/${decoded.id}`, bankData);
+  //     const response = await axios.put(`/api/v1/updateUser/${decoded.id}`, bankData);
 
-      if (response.status === 200) {
-        toast.success("Bank details updated successfully!");
-        setIsEditingBank(false);
+  //     if (response.status === 200) {
+  //       toast.success("Bank details updated successfully!");
+  //       setIsEditingBank(false);
         
-        if (response.data.token) {
-          updateAuth(response.data.token);
-        }
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to update bank details");
-    } finally {
-      setLoading(false);
-      setIsSubmitting(false);
-    }
-  };
+  //       if (response.data.token) {
+  //         updateAuth(response.data.token);
+  //       }
+  //     }
+  //   } catch (error) {
+  //     toast.error(error.response?.data?.message || "Failed to update bank details");
+  //   } finally {
+  //     setLoading(false);
+  //     setIsSubmitting(false);
+  //   }
+  // };
 
   // Handle user details update
   const saveAccount = async () => {
@@ -302,7 +302,7 @@ const Profile = () => {
                     <img src="boa.png" alt="Bank" height="24" className="me-2" />
                     Bank Details
                   </h5>
-                  {isEditingBank ? (
+                  {/* {isEditingBank ? (
                     <div className="d-flex gap-2">
                       <Button 
                         variant="secondary"
@@ -328,7 +328,7 @@ const Profile = () => {
                     >
                       Edit
                     </EditButton>
-                  )}
+                  )} */}
                 </div>
 
                 <div className="row g-3">

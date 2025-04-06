@@ -101,7 +101,6 @@ const FundBoard = () => {
   };
   const fetchData = async () => {
     if (!token || !decoded) return;
-
     try {
       const response = await axios.get(url);
       const sortedData = response.data.fund.sort((a, b) => {
@@ -127,7 +126,6 @@ const FundBoard = () => {
     try {
       await axios.delete(`/api/v1/getFund_history/${id}`);
       console.log(fund,"array")
-      // setFund(fund.filter(item => item._id !== id));
       setShowDelModal(false);
       toast.success("Deleted successfully");
       setItemToDelete(null);
@@ -165,7 +163,6 @@ const FundBoard = () => {
       const now = new Date();
       const formattedDate = `${now.getDate().toString().padStart(2, "0")}/${(now.getMonth() + 1).toString().padStart(2, "0")}/${now.getFullYear()}`;
       const formattedTime = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
-
       const withdraw_fund = {
         sender: decoded.name,
         Format: "withdraw",
@@ -212,8 +209,8 @@ const FundBoard = () => {
         Format: "fund",
         Date: formattedDate,
         Time: formattedTime,
-        Name: decoded.name,
         Transaction_id: decoded.bank,
+        Name: decoded.name,
         Type: "pending",
         amount: amountNum,
       };
@@ -252,39 +249,23 @@ const FundBoard = () => {
                     </h5>
                     <p className="mb-0 fw-semibold text-muted">Your Balance</p>
                   </div>                  
-                  {(decoded.bank === "Unlinked") ?
-                    (<div>                    
-                      <button
-                        disabled = {true} 
-                        className="btn btn-sm btn-secondary me-2"
-                        //onClick={() => setFund(true)}
-                      >
-                        Deposit Funds
-                      </button>
-                      <button
-                        disabled = {true}
-                        className="btn btn-sm btn-sseconday"
-                        //onClick={() => setwithdraw(true)}
-                      >
-                        Withdraw Funds
-                      </button>
-                    </div>)
-                  :(<div>                    
-                      <button
-                        type="button" 
-                        className="btn btn-sm btn-success me-2"
-                        onClick={() => setFund(true)}
-                      >
-                        Deposit Funds
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-danger"
-                        onClick={() => setwithdraw(true)}
-                      >
-                        Withdraw Funds
-                      </button>
-                    </div>)}
+
+                  <div>
+                    <button
+                      type="button" 
+                      className="btn btn-sm btn-success me-2"
+                      onClick={() => setFund(true)}
+                    >
+                      Deposit Funds
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-danger"
+                      onClick={() => setwithdraw(true)}
+                    >
+                      Withdraw Funds
+                    </button>
+                  </div>
                 </div>
                 <div className="border rounded p-3">
                   <h5 className="m-0 font-15 mb-3">
@@ -393,8 +374,8 @@ const FundBoard = () => {
                       )}
                     </tr>
                   </thead>
-
-                  <tbody class name="table-group-divider text-center" style={{ color: "blue" }}>
+                  {decoded.role === "admin" ?
+                  (<tbody class name="table-group-divider text-center" style={{ color: "blue" }}>
                     {transaction
                       .filter((items) => items.Format === "fund")
                       .map((item, index) => {
@@ -409,12 +390,9 @@ const FundBoard = () => {
                                 <td>{item.Transaction_id}</td>
                                 <td>{item.sender}</td>
                                 <td>
-                                  {item.Type === "donation" ? (<h6 className="bold" style={{color:"gold"}}>donation</h6>
-                                    
-                                  ):<span className ={(item.Type==="success")?"text-success":(item.Type === "pending"?"text-primary":"text-danger")}>
-                                  {item.Type}
-                                </span>}
-                                  
+                                  <span className ={(item.Type==="success")?"text-success":(item.Type === "pending"?"text-primary":"text-danger")}>
+                                    {item.Type}
+                                  </span>                                  
                                 </td>
                                 <td>${item.amount}</td>
                                 {decoded.role === "admin" && (
@@ -449,7 +427,61 @@ const FundBoard = () => {
                               </tr>
                             );
                       })}
-                  </tbody>
+                  </tbody>)
+                  :(<tbody class name="table-group-divider text-center" style={{ color: "blue" }}>
+                    {transaction
+                      .filter((items) => items.Format === "fund")
+                      .filter((items) => items.sender === decoded.name)
+                      .map((item, index) => {
+                        if (index > 10 * currentAddpage - 11)
+                          if (index < 10 * currentAddpage)
+                            return (
+                              (item.sender === decoded.name || decoded.role === "admin" ) && 
+                              <tr className="text-center">
+                                <td>{index + 1}</td>
+                                <td>{item.Date}</td>
+                                <td>{item.Time}</td>
+                                <td>{item.Transaction_id}</td>
+                                <td>{item.sender}</td>
+                                <td>
+                                  <span className ={(item.Type==="success")?"text-success":(item.Type === "pending"?"text-primary":"text-danger")}>
+                                    {item.Type}
+                                  </span>                                  
+                                </td>
+                                <td>${item.amount}</td>
+                                {decoded.role === "admin" && (
+                                  <td>
+                                    <button
+                                      className="btn btn-sm btn-primary me-2"
+                                      onClick={() => {
+                                        setEditItem(item);
+                                        setEditFormData({
+                                          sender: item.sender,
+                                          Format: item.Format,
+                                          Transaction_id: item.Transaction_id,
+                                          Type: item.Type,
+                                          amount: item.amount
+                                        });
+                                        setShowModal(true);
+                                      }}
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      className="btn btn-sm btn-danger"
+                                      onClick={() => {
+                                        setItemToDelete(item._id);
+                                        setShowDelModal(true);
+                                      }}
+                                    >
+                                      Delete
+                                    </button>
+                                  </td>
+                                )}
+                              </tr>
+                            );
+                      })}
+                  </tbody>)}
                 </table>
               </div>
               <nav aria-label="..." className="float-end">
@@ -518,8 +550,8 @@ const FundBoard = () => {
                       )}
                     </tr>
                   </thead>
-
-                  <tbody>
+                  {decoded.role === "admin" ?
+                  (<tbody class name="table-group-divider text-center" style={{ color: "blue" }}>
                     {transaction
                       .filter((items) => items.Format === "withdraw")
                       .map((item, index) => {
@@ -571,7 +603,61 @@ const FundBoard = () => {
                               </tr>
                             );
                       })}
-                  </tbody>
+                  </tbody>)
+                  :(<tbody class name="table-group-divider text-center" style={{ color: "blue" }}>
+                    {transaction
+                      .filter((items) => items.Format === "withdraw")
+                      .filter((items) => items.sender === decoded.name)
+                      .map((item, index) => {
+                        if (index > 10 * currentWithdrawpage - 11)
+                          if (index < 10 * currentWithdrawpage)
+                            return (
+                              (item.sender === decoded.name || decoded.role === "admin" ) && 
+                              <tr className="text-center">
+                                <td>{index + 1}</td>
+                                <td>{item.Date}</td>
+                                <td>{item.Time}</td>                               
+                                <td>{item.Transaction_id}</td>
+                                <td>{item.sender}</td>
+                                <td>
+                                  <span className ={(item.Type==="success")?"text-success":(item.Type === "pending"?"text-primary":"text-danger")}>
+                                    {item.Type}
+                                  </span>
+                                </td>
+                                <td>${item.amount}</td>
+                                {decoded.role === "admin" && (
+                                  <td>
+                                  <button
+                                      className="btn btn-sm btn-primary me-2"
+                                      onClick={() => {
+                                        setEditItem(item);
+                                        setEditFormData({
+                                          sender: item.sender,
+                                          Format: item.Format,
+                                          Transaction_id: item.Transaction_id,
+                                          Type: item.Type,
+                                          amount: item.amount
+                                        });
+                                        setShowModal(true);
+                                      }}
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      className="btn btn-sm btn-danger"
+                                      onClick={() => {
+                                        setItemToDelete(item._id);
+                                        setShowDelModal(item._id);
+                                      }}
+                                    >
+                                      Delete
+                                    </button>
+                                  </td>
+                                )}
+                              </tr>
+                            );
+                      })}
+                  </tbody>)}
                 </table>
               </div>
               <nav aria-label="..." className="float-end">

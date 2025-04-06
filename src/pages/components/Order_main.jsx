@@ -68,6 +68,7 @@ const Order_main = () => {
     { name: "Type", tag: "Type" },
     { name: "Option", tag: "Option" },
     { name: "Net Qty.", tag: "Qty" },
+    { name: "Value", tag: "value" },
     { name: "CMP", tag: "CMP" },
     { name: "Order Price", tag: "price" },
   ];
@@ -105,6 +106,7 @@ const Order_main = () => {
   const handleAdd = async () => {
     try {
       const response = await axios.post("/api/v1/Order", newItem);
+      console.log(response.data);
       setPositions([...positions, response.data]);
       toast.success("Order added successfully");
       setAddShowModal(false);
@@ -202,7 +204,7 @@ const Order_main = () => {
                     </td>
                     <td>{item.Option}</td>
                     <td>{item.Qty}</td>
-                    <td style={{ backgroundColor: "#f8f8f8" }}>{item.price * item.Qty}</td>
+                    <td style={{ backgroundColor: "#f8f8f8" }}>{item.value}</td>
                     <td>{item.CMP}</td>
                     <td>{item.price}</td>
                     {decoded.role === "admin" && (

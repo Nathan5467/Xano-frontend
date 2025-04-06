@@ -16,24 +16,45 @@ const AdminFund = () => {
   const [balance, setBalance] = useState(decoded.balance);
 
   useEffect(() => {
-    fetchTotalFund();
-  }, []);
-
-  const fetchTotalFund = async () => {
-    setIsLoading(true);
-    setError("");
-    try {
-      const response = await axios.get("/api/v1/getTotal_fund");
-      if (response.data.total_fund.length > 0) {
-        setTotalFund(parseFloat(response.data.total_fund[0].value));
+    // Create WebSocket connection
+    const ws = new WebSocket('your_websocket_endpoint');
+  
+    ws.onopen = () => {
+      console.log('Connected to WebSocket');
+    };
+  
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.name === "trew") {
+        setBalance(data.balance);
       }
-    } catch (error) {
-      setError("Failed to fetch current balance");
-      console.error("Error fetching total fund:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
+  
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+  
+    // Cleanup WebSocket connection on component unmount
+    return () => {
+      ws.close();
+    };
+  }, []);
+    // Set up polling every 5 seconds
+    // const interval = setInterval(fetchBalance, 5000);
+
+  // const fetchBalance = async () => {
+  //   setIsLoading(true);
+  //   setError("");
+  //   try {
+
+
+  //   } catch (error) {
+  //     setError("Failed to fetch current balance");
+  //     console.error("Error fetching total fund:", error);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   const handleAddFund = async () => {
     if (decoded.bank === "Unlinked") {
@@ -48,7 +69,7 @@ const AdminFund = () => {
     setIsLoading(true);
     setError("");
     setSuccess("");
-    setBalance(decoded.balance);
+    setBalance(balance);
     const now = new Date();
     const formattedDate = `${now.getDate().toString().padStart(2, "0")}/${(now.getMonth() + 1)
       .toString()
@@ -72,16 +93,6 @@ const AdminFund = () => {
       
       await axios.post("/api/v1/getFund_history", post_fund);
       
-      // Update total fund
-      // const newTotal = isAdmin ? parseFloat(amount) : totalFund + parseFloat(amount);
-      // await axios.post("/api/v1/getTotal_fund", [
-      //   {
-      //     name: "total",
-      //     value: newTotal.toString(),
-      //   },
-      // ]);
-      // setTotalFund(newTotal);
-      // setAmount("");
       setSuccess(isAdmin ? "Total fund updated successfully!" : "Funds added successfully!");
       setTimeout(() => {
         setShowDialog(false);
@@ -93,15 +104,6 @@ const AdminFund = () => {
       setIsLoading(false);
     }
   };
-
-  // const getBalance = (data, userName)  => { 
-  //   const user = data.user.find(user => user.name === userName);
-  //   return user ? user.balance : null;
-
-  // }
-  // const data = axios.get("/api/v1/getAllUsers");
-  // console.log("***************", data);
-  
 
   const handleCloseDialog = () => {
     setShowDialog(false);
