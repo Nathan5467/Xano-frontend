@@ -88,7 +88,7 @@ const LoginPage = () => {
           <small className="text-muted">Sign in to continue</small>
         </div>
         <div className="mb-3">
-          <label htmlFor="username" className="form-label fw-semibold">
+          <label htmlFor="useremail" className="form-label fw-semibold">
             email
           </label>
           <input
