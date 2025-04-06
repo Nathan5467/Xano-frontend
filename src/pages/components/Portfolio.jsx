@@ -8,10 +8,7 @@ import { Button, Modal } from "react-bootstrap";
 const Portfolio = () => {
   const [page, setPage] = useState(1);
   const [userPage, setUserPage] = useState(1);
-  const [token] = useState(
-    JSON.parse(localStorage.getItem("auth")) || ""
-  );
-
+  const [token] = useState(JSON.parse(localStorage.getItem("auth")) || "");
   axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
   const decoded = jwtDecode(token);
   const [showModal, setShowModal] = useState(false);
@@ -164,6 +161,7 @@ const Portfolio = () => {
 
 const [stocksList, setStocksList] = useState([]);  // Initialize with empty array instead of null
 
+const uniqueStocks = Array.isArray(stocksList) ? [...new Set(stocksList)] : [];
 useEffect(() => {
   if (stock_value && stock_value.length > 0) {  // Check if stock_value exists and has data
     setStocksList(stock_value.map((item) => item.stocks));
@@ -266,11 +264,11 @@ useEffect(() => {
                                 <td>{item.val_cmp}</td>
                                 <td className={item.day_gain < 0 ? 'text-danger' : 'text-success'}>{item.day_gain}</td>
                                 <td className={item.return < 0 ? 'text-danger' : 'text-success'}>{item.return}</td>
-                                {decoded.role === "admin" && <td className={item.Type === "failed" ? 'text-danger' : item.Type === "pending" ? 'text-warning' : 'text-success'}>{item.owner}</td>}
-                                <td className={`badge bg-${
-                                  item.Type === "success" ? "success" :
-                                  item.Type === "pending" ? "warning" : "danger"
-                                }`}>{item.Type}</td>
+                                {decoded.role === "admin" && <td className={item.avg <= 0 ? 'bg-danger' : ''}>{item.owner}</td>}
+                                <td className={
+                                  item.Type === "success" ? "text-info" :
+                                  item.Type === "pending" ? "text-warning" : "text-danger"
+                                }>{item.Type}</td>
                                 {decoded.role === "admin" && (
                                   <td>
                                     <img
@@ -303,19 +301,19 @@ useEffect(() => {
                                 key={index}
                                 className="cursor-pointer text-center"
                               >
-                                <td>{item.stocks}</td>
-                                <td>{item.qty}</td> 
-                                <td  className={item.avg === 0 ? 'bg-secondary' : ''}>{item.avg}</td>
+                                <td className={item.avg === 0 ? 'bg-secondary' : ''}>{item.stocks}</td>
+                                <td className={item.avg === 0 ? 'bg-secondary' : ''}>{item.qty}</td> 
+                                <td className={item.avg === 0 ? 'bg-secondary' : ''}>{item.avg}</td>
                                 <td className={item.avg === 0 ? 'bg-secondary' : ''}>{item.cmp}</td>
                                 <td className={item.avg === 0 ? 'bg-secondary' : ''}>{item.val_cost}</td>
                                 <td className={item.avg === 0 ? 'bg-secondary' : ''}>{item.val_cmp}</td>
                                 <td className={item.day_gain < 0 ? 'text-danger' : 'text-success'}>{item.day_gain}</td>
                                 <td className={item.return < 0 ? 'text-danger' : 'text-success'}>{item.return}</td>
                                 {decoded.role === "admin" && <td>{item.owner}</td>}
-                                <td className={`badge bg-${
-                                  item.Type === "success" ? "success" :
-                                  item.Type === "pending" ? "warning" : "danger"
-                                }`}>{item.Type}</td>
+                                <td className={
+                                  item.Type === "success" ? "text-info" :
+                                  item.Type === "pending" ? "text-warning" : "text-danger"
+                                }>{item.Type}</td>
                                 {decoded.role === "admin" && (
                                   <td>
                                     <img
@@ -507,7 +505,7 @@ useEffect(() => {
                       }}
                     >
                       <option value="">Select a stock</option>
-                      {stocksList.map((stock, index) => (
+                      {uniqueStocks.map((stock, index) => (
                         <option key={index} value={stock}>
                           {stock}
                         </option>
