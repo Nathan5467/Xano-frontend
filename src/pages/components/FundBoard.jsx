@@ -16,14 +16,44 @@ const FundBoard = () => {
   const [withFund, setWithFund] = useState(0);
   const [decoded, setDecoded] = useState();
   const [showDelModal, setShowDelModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
-
+  const [editItem, setEditItem] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    sender: "",
+    Format: "",
+    Transaction_id: "",
+    amount: "",
+    Type: "",
+  });
   // Fix token initialization
   const [token, setToken] = useState(() => {
     const storedToken = localStorage.getItem("auth");
     return storedToken ? JSON.parse(storedToken) : null;
   });
-  
+
+  const handleEdit = async(e) => {
+    e.preventDefault();
+    try {
+      console.log("****************",editFormData);
+      await axios.put(`/api/v1/getFund_history/${editItem._id}`, editFormData);
+      setShowDelModal(false);
+      setEditItem(null);
+      fetchData();
+      toast.success("Transaction updated successfully!");
+    } catch (error) {
+      console.error("Error updating transaction:", error);
+    }
+  };
+
+  const handleEditInputChange = (e) => {
+    const {name, value} = e.target;
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   useEffect(() => {
     if (token) {
       try {
@@ -139,7 +169,6 @@ const FundBoard = () => {
       const formattedTime = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
 
       const withdraw_fund = {
-        sender: decoded.name,
         Format: "withdraw",
         Date: formattedDate,
         Time: formattedTime,
@@ -180,7 +209,6 @@ const FundBoard = () => {
       const formattedTime = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
 
       const post_fund = {
-        sender: decoded.name,
         Format: "fund",
         Date: formattedDate,
         Time: formattedTime,
@@ -390,15 +418,22 @@ const FundBoard = () => {
                                 <td>${item.amount}</td>
                                 {decoded.role === "admin" && (
                                   <td>
-                                    {/* <button
+                                    <button
                                       className="btn btn-sm btn-primary me-2"
                                       onClick={() => {
-                                        setSelectItem(item);
+                                        setEditItem(item);
+                                        setEditFormData({
+                                          sender: item.sender,
+                                          Format: item.Format,
+                                          Transaction_id: item.Transaction_id,
+                                          Type: item.Type,
+                                          amount: item.amount
+                                        });
                                         setShowModal(true);
                                       }}
                                     >
                                       Edit
-                                    </button> */}
+                                    </button>
                                     <button
                                       className="btn btn-sm btn-danger"
                                       onClick={() => {
@@ -504,15 +539,22 @@ const FundBoard = () => {
                                 <td>${item.amount}</td>
                                 {decoded.role === "admin" && (
                                   <td>
-                                    {/* <button
+                                  <button
                                       className="btn btn-sm btn-primary me-2"
                                       onClick={() => {
-                                        setSelectItem(item);
+                                        setEditItem(item);
+                                        setEditFormData({
+                                          sender: item.sender,
+                                          Format: item.Format,
+                                          Transaction_id: item.Transaction_id,
+                                          Type: item.Type,
+                                          amount: item.amount
+                                        });
                                         setShowModal(true);
                                       }}
                                     >
                                       Edit
-                                    </button> */}
+                                    </button>
                                     <button
                                       className="btn btn-sm btn-danger"
                                       onClick={() => {
@@ -725,6 +767,107 @@ const FundBoard = () => {
             </div>
           </div>
         )}
+
+        {showModal && (
+          <div
+            className="modal fade show"
+            style={{ display: "block" }}
+            tabIndex="-1"
+            role="dialog"
+          >
+            <div className="modal-dialog" role="document">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Edit Transaction</h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={() => {
+                      setShowModal(false);
+                      setEditItem(null);
+                    }}
+                  />
+                </div>
+                <form onSubmit={handleEdit}>
+                  <div className="modal-body">
+                    <div className="mb-3">
+                      <label className="form-label">Sender</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        name="sender"
+                        value={editFormData.sender}
+                        onChange={handleEditInputChange}
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Format</label>
+                      <select
+                        className="form-control"
+                        name="Format"
+                        value={editFormData.Format}
+                        onChange={handleEditInputChange}
+                      >
+                        <option value="fund">Fund</option>
+                        <option value="withdraw">Withdraw</option>
+                      </select>
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Transaction ID</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        name="Transaction_id"
+                        value={editFormData.Transaction_id}
+                        onChange={handleEditInputChange}
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Type</label>
+                      <select
+                        className="form-control"
+                        name="Type"
+                        value={editFormData.Type}
+                        onChange={handleEditInputChange}
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="success">Success</option>
+                        <option value="failed">Failed</option>
+                      </select>
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Amount</label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        name="amount"
+                        value={editFormData.amount}
+                        onChange={handleEditInputChange}
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => {
+                        setShowModal(false);
+                        setEditItem(null);
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button type="submit" className="btn btn-primary">
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
       
       </div>}
     </>

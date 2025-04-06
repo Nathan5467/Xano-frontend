@@ -60,7 +60,7 @@ const AdminFund = () => {
     try {
       // Create new fund entry
       const post_fund = {
-        sender: decoded.email,
+        sender: decoded.name,
         Format: "fund",
         Date: formattedDate,
         Time: formattedTime,

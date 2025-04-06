@@ -59,7 +59,7 @@ const User_lists = () => {
 
   const handleDelete = async (id) => {
     try {
-      const response = await axios.delete(`/api/v1/deleteUser/${id}`);
+      const response = await axios.delete(`/api/v1/getAllUsers/${id}`);
       if (response.status === 200) {
         dispatch(deleteUser(id));
         setShowModal(false);
@@ -73,9 +73,7 @@ const User_lists = () => {
   
   const handleSave = async (updatedUserData) => {
     try {
-      console.log('Sending update for user:', updatedUserData); // Debug log
   
-      // Make sure we're sending all required fields
       const dataToUpdate = {
         _id: updatedUserData._id,
         name: updatedUserData.name,
@@ -89,9 +87,9 @@ const User_lists = () => {
         balance: updatedUserData.balance,
         logstatus: updatedUserData.logstatus
       };
-  
+
       const response = await axios.put(`/api/v1/updateUser/${updatedUserData._id}`, dataToUpdate);
-  
+      console.log('Update response:', response);
       if (response.status === 200) {
         // Update Redux store with the response data
         dispatch(updateUser(dataToUpdate)); // Use the same data we sent
@@ -181,8 +179,22 @@ const User_lists = () => {
                 <p className="fw-normal mb-1">{user.majority}</p>
               </td>
               <td className={user.logstatus ? "text-success" : "text-warning"}>
-                {user.logstatus ? "Logged In" : "Logged Out"}
+                <span
+                  className="dot"
+                  style={{
+                    backgroundImage: user.logstatus 
+                      ? 'radial-gradient(lightgreen, green)' 
+                      : 'radial-gradient(orange, red)',
+                    height: '25px',
+                    width: '25px',
+                    borderRadius: '50%',
+                    display: 'inline-block',
+                  }}
+                ></span>
               </td>
+              {/* <td className={user.logstatus ? "text-success" : "text-warning"}>
+                {user.logstatus ? "Logged In" : "Logged Out"}
+              </td> */}
               <td className={user.role === "admin" ? "text-danger" : "text-primary"}>
                 {user.role}
               </td>

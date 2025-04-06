@@ -80,54 +80,76 @@ const SaveButton = styled(Button)`
     border-color: ${props => props.isDarkMode ? '#218838' : '#218838'};
   }
 `;
+
+// First, modify the useAuth hook
 const useAuth = () => {
   const [authData, setAuthData] = useState(() => {
     const token = localStorage.getItem("auth");
     if (token) {
-      const decoded = jwtDecode(token);
-      return { token: JSON.parse(token), decoded };
+      try {
+        const decoded = jwtDecode(JSON.parse(token));
+        return { token: JSON.parse(token), decoded };
+      } catch (error) {
+        console.error("Error decoding token:", error);
+        localStorage.removeItem("auth");
+        return { token: null, decoded: null };
+      }
     }
-    //return { token: "", decoded: null };
+    return { token: null, decoded: null };
   });
 
   const updateAuth = (newToken) => {
-    localStorage.setItem("auth", JSON.stringify(newToken));
-    setAuthData({
-      token: newToken,
-      decoded: jwtDecode(newToken)
-    });
+    if (newToken) {
+      try {
+        const decoded = jwtDecode(newToken);
+        localStorage.setItem("auth", JSON.stringify(newToken));
+        setAuthData(prev => ({ ...prev, token: newToken, decoded }));
+      } catch (error) {
+        console.error("Error updating auth:", error);
+      }
+    }
   };
 
   return { ...authData, updateAuth };
 };
+
+// Profile component
 const Profile = () => {
   const { isDarkMode } = useTheme();
   const { token, decoded, updateAuth } = useAuth();
-  axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  const [bankData, setBankData] = useState({
-    bank: decoded.bank,
-    IFSC_Code: decoded.IFSC_Code,
-  });
-
-  const [formdata, setFormdata] = useState({
-    name: decoded.name,
-    phoneNumber: decoded.phoneNumbe,
-    branch: decoded.branch,
-    country: decoded.country,
-    majority: decoded.majority,
-  });
-
   const [option, setOption] = useState(1);
   const [faq, setFaq] = useState(1);
   const [isEditingBank, setIsEditingBank] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Initialize form data state
+  const [formdata, setFormdata] = useState({
+    name: decoded?.name || '',
+    phoneNumber: decoded?.phoneNumber || '',
+    branch: decoded?.branch || '',
+    country: decoded?.country || '',
+    majority: decoded?.majority || '',
+  });
+
+  // Initialize bank data state
+  const [bankData, setBankData] = useState({
+    bank: decoded?.bank || '',
+    IFSC_Code: decoded?.IFSC_Code || '',
+  });
+
+  // Set axios default header
+  useEffect(() => {
+    if (token) {
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    }
+  }, [token]);
+
   // Handle bank details update
   const handleBankEdit = () => {
     setBankData({
-      bank: decoded.bank,
-      IFSC_Code: decoded.IFSC_Code
+      bank: decoded?.bank || '',
+      IFSC_Code: decoded?.IFSC_Code || ''
     });
     setIsEditingBank(true);
   };
@@ -135,35 +157,26 @@ const Profile = () => {
   const handleBankCancel = () => {
     setIsEditingBank(false);
     setBankData({
-      bank: decoded.bank,
-      IFSC_Code: decoded.IFSC_Code
+      bank: decoded?.bank || '',
+      IFSC_Code: decoded?.IFSC_Code || ''
     });
   };
 
   const handleBankSave = async () => {
-    if (isSubmitting) return;
+    if (isSubmitting || !decoded?.id) return;
 
     try {
-      // Validation
       setIsSubmitting(true);
       setLoading(true);
-      console.log(decoded.id, bankData);
-      const response = await axios.put(`/api/v1/updateUser/${decoded.id}`, {
-        ...bankData,
-      });
+      
+      const response = await axios.put(`/api/v1/updateUser/${decoded.id}`, bankData);
 
       if (response.status === 200) {
-        toast.success("Updated successfully! \n\
-          If you want to link your bank account, please re-login now.");
+        toast.success("Bank details updated successfully!");
         setIsEditingBank(false);
         
         if (response.data.token) {
-
           updateAuth(response.data.token);
-          setBankData(prev => ({
-            ...prev,
-            ...jwtDecode(response.data.token)
-          }));
         }
       }
     } catch (error) {
@@ -176,49 +189,46 @@ const Profile = () => {
 
   // Handle user details update
   const saveAccount = async () => {
-    if (loading) return;
+    if (loading || !decoded?.id) return;
+    
     try {
       setLoading(true);
       const response = await axios.post("/api/v1/registeragain", {
         ...formdata,
         id: decoded.id,
       });
+
       if (response.status === 200) {
         toast.success("Profile updated successfully");
+        
         if (response.data.token) {
           updateAuth(response.data.token);
-          setFormdata(prev => ({
-            ...prev,
-            ...jwtDecode(response.data.token)
-          }));
         }
       }
     } catch (error) {
-      //console.error("Error updating profile:", error);
       toast.error(error.response?.data?.message || "Failed to update profile");
     } finally {
       setLoading(false);
     }
   };
 
+  // Update form data when decoded changes
   useEffect(() => {
-    // Update states when token changes
-    const currentToken = JSON.parse(localStorage.getItem("auth"));
-    if (currentToken) {
-      const decodedToken = jwtDecode(currentToken);
+    if (decoded) {
       setFormdata({
-        name: decodedToken.name,
-        phoneNumber: decodedToken.phoneNumber,
-        branch: decodedToken.branch,
-        country: decodedToken.country,
-        majority: decodedToken.majority,
+        name: decoded.name || '',
+        phoneNumber: decoded.phoneNumber || '',
+        branch: decoded.branch || '',
+        country: decoded.country || '',
+        majority: decoded.majority || '',
       });
       setBankData({
-        bank: decodedToken.bank,
-        IFSC_Code: decodedToken.IFSC_Code,
+        bank: decoded.bank || '',
+        IFSC_Code: decoded.IFSC_Code || '',
       });
     }
-  }, []);
+  }, [decoded]);
+
 
   return (
     <ProfileCard isDarkMode={isDarkMode}>

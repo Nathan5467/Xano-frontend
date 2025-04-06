@@ -218,7 +218,7 @@ const TopNavbar = () => {
                   <input
                     type="text"
                     className="btn btn-outline-primary me-2"
-                    value={`$${selectedPortfolioItem.stocks}`}
+                    value={selectedPortfolioItem.stocks}
                     readOnly
                   />
                 </div>
@@ -355,7 +355,7 @@ const TopNavbar = () => {
                     >
                       <span>{item.owner}</span>
                       <span>{item.stocks}</span>
-                      <span className="text-muted">${item.qty}</span>
+                      <span className="text-muted">{item.qty}</span>
                     </div>
                   ))}
                 </div>
